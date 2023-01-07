@@ -31,8 +31,14 @@ VALIDITY_TYPE = (
 
 class Plan(models.Model):
     name = models.CharField(max_length=255, null=True, blank=True)
-    amount = models.CharField(max_length=64, choices=AMOUNT_CHOICES, default="5000")
-    tenure = models.CharField(max_length=64, choices=TENURE_CHOICES, default="12")
+    # amount = models.CharField(max_length=64, choices=AMOUNT_CHOICES, default="5000")
+    # tenure = models.CharField(max_length=64, choices=TENURE_CHOICES, default="12")
+
+    # THESE amountOptions and Tenure options will have a coma separated strings
+    # that contains all the available options
+
+    amountOptions = models.CharField(max_length=512, default='1000')
+    tenureOptions = models.CharField(max_length=512, default='12')
     benefitPercentage = models.FloatField(default=0)
     benefitType = models.CharField(max_length=64, choices=BENEFIT, default="cashback")
     is_active = models.BooleanField(default=True)
