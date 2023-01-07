@@ -1,7 +1,7 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Plan
+from .models import Plan, Promotion
 
 
 # Create your views here.
@@ -43,7 +43,10 @@ class CreatePlan(APIView):
             data = {
                 'success': True,
                 'msg': 'Plan created successfully',
-                'data': {}
+                'data': {
+                    'id': new_plan.id,
+                    'name': new_plan.name
+                }
             }
             return Response(data, status.HTTP_200_OK)
         except Exception as e:
