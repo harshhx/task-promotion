@@ -23,7 +23,7 @@ BENEFIT = (
     ('extraVoucher', 'extraVoucher')
 )
 
-VALIDITY_TYPE=(
+VALIDITY_TYPE = (
     ('end_date', 'End Date'),
     ('num_of_users', 'Max Number of Users')
 )
@@ -55,3 +55,22 @@ class Promotion(models.Model):
 
     def __str__(self):
         return f'{self.plan.name}-{self.name}'
+
+
+class CustomerGoal(models.Model):
+    # the user and user_name should later be a foreign key to the user object
+    user = models.IntegerField()
+    user_name = models.CharField(max_length=64)
+
+    plan = models.ForeignKey('Plan', on_delete=models.CASCADE, blank=True, null=True)
+    promotion = models.ForeignKey('Promotion', on_delete=models.CASCADE, blank=True, null=True)
+
+    # Here we have made both plan and promotion to be blank and null to true but we will make sure that either one of
+    # them is set while creating the object in your view
+
+    is_promotion = models.BooleanField(default=False)
+    benefitPercentage = models.FloatField(default=0)
+    depositedAmount = models.FloatField(default=0)
+
+    def __str__(self):
+        return self.user_name
