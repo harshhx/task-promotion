@@ -137,3 +137,48 @@ class CreatePromotion(APIView):
                 'data': {}
             }
             return Response(data, status.HTTP_200_OK)
+
+
+class ListAllPlansAndPromotions(APIView):
+    @staticmethod
+    def get(request):
+
+        all_promotions = Promotion.objects.filter(is_active=True)
+        plan_id_to_exclude = set([plan.plan.id for plan in all_promotions])
+        all_plans = Plan.objects.filter(is_active=True).exclude(id__in=list(plan_id_to_exclude))
+
+        plans, promotions = [], []
+
+        for promo in all_promotions:
+            promotions.append({
+                'id': promo.id,
+                'name': promo.name,
+                'validity_type': promo.validity_type,
+                'start_date': promo.start_date,
+                'end_date': promo.end_date,
+                'users_left': promo.users_left,
+                'benefit_percentage': promo.benefitPercentage,
+                'amount_options': promo.plan.amountOptions,
+                'tenure_options': promo.plan.tenureOptions,
+                'benefit_type': promo.plan.benefitType
+            })
+
+        for plan in all_plans:
+            plans.append({
+                'id': plan.id,
+                'name': plan.name,
+                'benefit_percentage': plan.benefitPercentage,
+                'amount_options': plan.amountOptions,
+                'tenure_options': plan.tenureOptions,
+                'benefit_type': plan.benefitType
+            })
+
+        data = {
+            'success': True,
+            'msg': "",
+            'data': {
+                'promotions': promotions,
+                'plans': plans
+            }
+        }
+        return Response(data, status.HTTP_200_OK)
