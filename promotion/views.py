@@ -1,9 +1,11 @@
 from datetime import datetime
+
+from django.db import transaction
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Plan, Promotion
+from .models import Plan, Promotion, CustomerGoal
 
 
 # Create your views here.
@@ -182,3 +184,139 @@ class ListAllPlansAndPromotions(APIView):
             }
         }
         return Response(data, status.HTTP_200_OK)
+
+
+class EnrollCustomer(APIView):
+    @staticmethod
+    def post(request):
+        user = request.data.get('user')
+        user_name = request.data.get('user_name')
+        plan_id = request.data.get('plan_id')
+        promotion_id = request.data.get('promotion_id')
+        is_promotion = request.data.get('is_promotion')
+        benefit_percentage = request.data.get('benefit_percentage')
+        deposited_amount = request.data.get('deposited_amount')
+
+        if not user and not user_name:
+            return Response({
+                'success': False, 'msg': "please enter user details", 'data': {}
+            }, status.HTTP_200_OK)
+
+        if not plan_id and not promotion_id and not is_promotion:
+            return Response({
+                'success': False, 'msg': "please enter either plan or promotion", 'data': {}
+            }, status.HTTP_200_OK)
+
+        if not benefit_percentage or not deposited_amount:
+            return Response({
+                'success': False, 'msg': "please enter deposit details", 'data': {}
+            }, status.HTTP_200_OK)
+
+        is_promotion = True if is_promotion == "true" else False
+
+        if not is_promotion:
+            plan = Plan.objects.filter(id=int(plan_id))[0]
+
+            if not plan.is_active:
+                return Response({
+                    'success': False,
+                    'msg': "plan has expired",
+                    'data': {}
+                }, status.HTTP_200_OK)
+
+            try:
+                goal = CustomerGoal(
+                    user=int(user),
+                    user_name=user_name,
+                    plan=plan,
+                    is_promotion=False,
+                    benefitPercentage=benefit_percentage,
+                    depositedAmount=deposited_amount
+                )
+                goal.save()
+                return Response({
+                    'success': True,
+                    'msg': "Goal created successfully",
+                    'data': {
+                        'id': goal.id,
+                        'user_name': goal.user_name,
+                        'benefit_percentage': goal.benefitPercentage
+                    }
+                }, status.HTTP_200_OK)
+
+            except Exception as e:
+                return Response({
+                    'success': False,
+                    'msg': "Some Error Occurred on our end",
+                    'data': {}
+                }, status.HTTP_200_OK)
+
+        else:
+
+            promotion = Promotion.objects.filter(id=int(promotion_id))[0]
+
+            if not promotion.is_active:
+                return Response({
+                    'success': False,
+                    'msg': "promotion has expired",
+                    'data': {}
+                }, status.HTTP_200_OK)
+
+            # THIS end_date if block is just a backup if our scheduler fails to toggle the is active
+            if promotion.validity_type == "end_date":
+                if promotion.end_date <= datetime.today().date():
+                    promotion.is_active = False
+                    promotion.save()
+                    return Response({
+                        'success': False,
+                        'msg': 'Sorry Promotion has Expired',
+                        'data': {}
+                    }, status.HTTP_200_OK)
+
+            # This else block is also for backup check
+            else:
+                if promotion.users_left <= 0:
+                    promotion.is_active = False
+                    promotion.save()
+                    return Response({
+                        'success': False,
+                        'msg': 'Promotion Quota FUll',
+                        'data': {}
+                    }, status.HTTP_200_OK)
+
+            try:
+
+                with transaction.atomic():
+                    goal = CustomerGoal(
+                        user=int(user),
+                        user_name=user_name,
+                        promotion=promotion,
+                        is_promotion=True,
+                        benefitPercentage=benefit_percentage,
+                        depositedAmount=deposited_amount
+                    )
+                    goal.save()
+
+                    if promotion.validity_type == "num_of_users":
+                        new_num = promotion.users_left - 1
+                        promotion.users_left = new_num
+                        if new_num <= 0:
+                            promotion.is_active = False
+                        promotion.save()
+
+                    return Response({
+                        'success': True,
+                        'msg': "Goal created successfully",
+                        'data': {
+                            'id': goal.id,
+                            'user_name': goal.user_name,
+                            'benefit_percentage': goal.benefitPercentage
+                        }
+                    }, status.HTTP_200_OK)
+
+            except Exception as e:
+                return Response({
+                    'success': False,
+                    'msg': "Some Error Occurred on our end",
+                    'data': {}
+                }, status.HTTP_200_OK)
