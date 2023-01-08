@@ -152,7 +152,7 @@ class ListAllPlansAndPromotions(APIView):
         for promo in all_promotions:
             promotions.append({
                 'id': promo.id,
-                'name': promo.name,
+                'name': f'{promo.plan.name}-{promo.name}',
                 'validity_type': promo.validity_type,
                 'start_date': promo.start_date,
                 'end_date': promo.end_date,
