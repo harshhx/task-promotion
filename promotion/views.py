@@ -109,22 +109,31 @@ class CreatePromotion(APIView):
             }, status.HTTP_200_OK)
         plan = plan[0]
 
-        new_promotion = Promotion(
-            name=name,
-            plan=plan,
-            validity_type=validity_type,
-            benefitPercentage=benefit_percentage,
-            start_date=start_date,
-            end_date=end_date,
-            users_left=users_left
-        )
-        new_promotion.save()
-        data = {
-            'success': True,
-            'msg': 'Promotion Created Successfully',
-            'data': {
-                'id': new_promotion.id,
-                'name': new_promotion.name
+        try:
+            new_promotion = Promotion(
+                name=name,
+                plan=plan,
+                validity_type=validity_type,
+                benefitPercentage=benefit_percentage,
+                start_date=start_date,
+                end_date=end_date,
+                users_left=users_left
+            )
+            new_promotion.save()
+            data = {
+                'success': True,
+                'msg': 'Promotion Created Successfully',
+                'data': {
+                    'id': new_promotion.id,
+                    'name': new_promotion.name
+                }
             }
-        }
-        return Response(data, status.HTTP_200_OK)
+            return Response(data, status.HTTP_200_OK)
+
+        except Exception as e:
+            data = {
+                'success': False,
+                'msg': 'Some error occurred on our end',
+                'data': {}
+            }
+            return Response(data, status.HTTP_200_OK)
